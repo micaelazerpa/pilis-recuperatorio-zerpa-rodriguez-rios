@@ -1,9 +1,9 @@
 import {
-  type TQuestions,
-  type TPreferences,
+  type IQuestion,
+  type IPreferences,
   type TTags,
   type TCategories,
-} from '@/types/trivia-api'
+} from '@/types/trivia'
 
 const API = 'https://the-trivia-api.com/api'
 
@@ -11,9 +11,17 @@ function getQuery(parameter: string, value: string | string[]): string {
   const query = parameter + '='
 
   if (typeof value === 'string') return value === '' ? value : query + value
-  if (value.length === 0) return ''
 
-  return query + value.reduce((parse, value) => parse + ',' + value)
+  const arrayValue = value.reduce((parse, value) => {
+    if (parse === '' && value === '') return ''
+    if (parse === '' && value !== '') return value + ','
+    if (value === '') return parse
+
+    return parse + ',' + value
+  })
+
+  if (arrayValue === '') return ''
+  return query + arrayValue
 }
 
 function addQuery(query: string): string {
@@ -21,7 +29,9 @@ function addQuery(query: string): string {
   return '&' + query
 }
 
-type TTriviaFetcher = (preferences: TPreferences) => Promise<TQuestions>
+type TTriviaFetcher = (
+  preferences: Partial<IPreferences>
+) => Promise<IQuestion[]>
 export const getQuestions: TTriviaFetcher = async preferences => {
   let url = API + '/questions?'
 
@@ -30,16 +40,16 @@ export const getQuestions: TTriviaFetcher = async preferences => {
 
   url += getQuery('limit', preferences.limit.toString())
 
-  const categoryQuery = getQuery('categories', preferences.categories)
+  const categoryQuery = getQuery('categories', preferences.categories ?? '')
   url += addQuery(categoryQuery)
 
-  const difficulty = getQuery('difficulty', preferences.difficulty)
+  const difficulty = getQuery('difficulty', preferences.difficulty ?? '')
   url += addQuery(difficulty)
 
-  const tags = getQuery('tags', preferences.tags)
+  const tags = getQuery('tags', preferences.tags ?? '')
   url += addQuery(tags)
 
-  const region = getQuery('region', preferences.region)
+  const region = getQuery('region', preferences.region ?? '')
   url += addQuery(region)
 
   const response = await fetch(url)
@@ -60,4 +70,10 @@ export const getTags: TTagsFetcher = async () => {
 
   const response = await fetch(URL)
   return await response.json()
+}
+
+export const TriviaApi = {
+  getTags,
+  getCategory,
+  getQuestions,
 }
